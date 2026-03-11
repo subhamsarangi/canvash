@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#141418">
 <title>Canvas Studio</title>
+<!-- Umami Analytics — replace YOUR_WEBSITE_ID with your ID from umami.is -->
+<script defer src="https://cloud.umami.is/script.js" data-website-id="25f2cac7-93b9-403b-a113-95476281379a"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Syne+Mono&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -844,6 +846,11 @@ input[type=range]::-webkit-slider-thumb {
 // ══════════════════════════════════
 // DATA
 // ══════════════════════════════════
+// ── ANALYTICS ──
+function track(event, data) {
+  try { if(window.umami) window.umami.track(event, data); } catch(e) {}
+}
+
 const COLORS = [
   { name:'Midnight Ink',   hex:'#1a1a2e' },
   { name:'Aged Ivory',     hex:'#f5f0e8' },
@@ -1344,6 +1351,7 @@ function newProject(){
   resizeCanvas();
   renderProjects();
   closePanel();
+  track('new-project');
   showToast('New project');
 }
 
@@ -1427,6 +1435,7 @@ function renderBgGrid(){
       renderBgGrid();
       closePanel();
       scheduleSave();
+      track('background-changed', { background: bg.id });
     });
     grid.appendChild(opt);
   });
@@ -1482,6 +1491,7 @@ function setTool(t){
   // Update cursor for desktop
   canvas.style.cursor = t==='pan' ? 'grab' : 'crosshair';
   document.getElementById('bgCanvas').style.cursor = t==='pan' ? 'grab' : 'crosshair';
+  track('tool-selected', { tool: t });
 }
 
 // ══════════════════════════════════
@@ -1519,6 +1529,7 @@ document.getElementById('tbClear').addEventListener('click',()=>{
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     fillBg();
     scheduleSave();
+    track('canvas-cleared');
     showToast('Canvas cleared');
   }
 });
@@ -1586,6 +1597,7 @@ document.getElementById('aExportJpg').addEventListener('click',()=>{
   a.download=S.projectName+'.jpg';
   a.href=makeExportCanvas(true).toDataURL('image/jpeg',0.95);
   a.click();
+  track('export', { format: 'jpg' });
   showToast('Saved as JPG (auto-cropped)'); closePanel();
 });
 
@@ -1594,6 +1606,7 @@ document.getElementById('aExportPng').addEventListener('click',()=>{
   a.download=S.projectName+'.png';
   a.href=makeExportCanvas(true).toDataURL('image/png');
   a.click();
+  track('export', { format: 'png' });
   showToast('Saved as PNG (auto-cropped)'); closePanel();
 });
 
@@ -1601,6 +1614,7 @@ document.getElementById('aCopyImg').addEventListener('click',async()=>{
   try{
     makeExportCanvas(true).toBlob(async b=>{
       await navigator.clipboard.write([new ClipboardItem({'image/png':b})]);
+      track('export', { format: 'clipboard' });
       showToast('Copied (auto-cropped)!');
     });
   }catch{ showToast('Copy not supported in this browser'); }
@@ -1669,6 +1683,13 @@ window.addEventListener('resize',()=>{
   if(Math.abs(canvas.width - window.innerWidth) > 50 || Math.abs(canvas.height - window.innerHeight) > 100){
     resizeCanvas();
   }
+});
+
+track('session-start');
+const _sessionStart = Date.now();
+window.addEventListener('beforeunload', () => {
+  const seconds = Math.round((Date.now() - _sessionStart) / 1000);
+  track('session-end', { seconds });
 });
 
 resizeCanvas();
