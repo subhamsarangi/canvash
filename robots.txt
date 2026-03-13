@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: <https://canvash.openworldregister.com/sitemap.xml>
